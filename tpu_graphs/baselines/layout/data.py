@@ -236,7 +236,7 @@ class NpzDatasetPartition:
     self.node_opcode: 'tf.Tensor | None' = None  # ^^
     self.edge_index: 'tf.Tensor | None' = None   # indexed by edge_ranges.
     self.config_runtime: 'tf.Tensor | None' = None  # indexed by config_ranges.
-    self.argsort_config_runtime: tf.Tensor|None = None  # by flat_config_ranges.
+    self.argsort_config_runtime: 'tf.Tensor | None' = None  # by flat_config_ranges.
     self.graph_id: 'tf.Tensor | None' = None
     # indexed by config_ranges and config_node_ranges
     self.node_config_feat: 'tf.Tensor | None' = None
