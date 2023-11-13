@@ -16,6 +16,7 @@
 
 import tensorflow as tf
 import tensorflow_gnn as tfgnn
+from tensorflow.keras.layers import BatchNormalization
 
 from tpu_graphs.baselines.tiles import implicit
 from tpu_graphs.baselines.tiles import models
@@ -30,9 +31,9 @@ class ResModel(tf.keras.Model):
 
   def __init__(
       self, num_configs: int, num_ops: int, op_embed_dim: int = 32,
-      num_gnns: int = 2, mlp_layers: int = 2,
+      num_gnns: int = 3, mlp_layers: int = 2,
       hidden_activation: str = 'leaky_relu',
-      hidden_dim: int = 32, reduction: str = 'sum'):
+      hidden_dim: int = 64, reduction: str = 'sum'):
     super().__init__()
     self._num_configs = num_configs
     self._num_ops = num_ops
@@ -66,6 +67,7 @@ class ResModel(tf.keras.Model):
     config_features = 100 * (adj_config @ config_features)
     x = tf.concat([config_features, x], axis=-1)
     x = self._prenet(x)
+    x = BatchNormalization()(x)
     x = tf.nn.leaky_relu(x)
 
     for layer in self._gc_layers:
@@ -115,6 +117,7 @@ class ResModel(tf.keras.Model):
     config_feats = (adj_config.transpose() @ x)
 
     # Global pooling
+    # TODO
     adj_pool_op_sum = implicit.AdjacencyMultiplier(graph, 'g_op').transpose()
     adj_pool_op_mean = adj_pool_op_sum.normalize_right()
     adj_pool_config_sum = implicit.AdjacencyMultiplier(
@@ -128,6 +131,7 @@ class ResModel(tf.keras.Model):
         tf.nn.l2_normalize(adj_pool_config_sum @ config_feats, axis=-1),
     ], axis=-1))
 
+    x = BatchNormalization()(x)
     x = tf.squeeze(x, -1)
 
     return x

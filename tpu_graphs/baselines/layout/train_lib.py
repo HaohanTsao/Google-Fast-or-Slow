@@ -80,7 +80,7 @@ _INFERENCE_CONFIGS_BATCH_SIZE = 500  # For producing inference csv, post-train.
 def train(args: train_args.TrainArgs):
   """Training loop. `train_args.py` contains description of arguments."""
   out_dir = os.path.expanduser(args.out_dir)
-  if not tf.io.gfile.exists(out_dir):
+  if not tf.io.gfile.exists(out_dir): # 創建output的目錄
     tf.io.gfile.makedirs(out_dir)
 
   # Will be written in out_dir.
