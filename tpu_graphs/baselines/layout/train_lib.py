@@ -112,8 +112,11 @@ def train(args: train_args.TrainArgs):
   model = models.ResModel(num_configs, dataset_partitions.num_ops)
 
   loss = tfr.keras.losses.ListMLELoss()  # (temperature=10)
+  initial_lr = args.learning_rate
+  lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+    initial_lr, decay_steps=10000, decay_rate=0.9, staircase=True)
   opt = tf.keras.optimizers.Adam(
-      learning_rate=args.learning_rate, clipnorm=args.clip_norm)
+      learning_rate=lr_schedule, clipnorm=args.clip_norm)
 
   model.compile(loss=loss, optimizer=opt, metrics=[
       tfr.keras.metrics.OPAMetric(name='opa_metric'),

@@ -16,7 +16,6 @@
 
 import tensorflow as tf
 import tensorflow_gnn as tfgnn
-from tensorflow.keras.layers import BatchNormalization
 
 from tpu_graphs.baselines.tiles import implicit
 from tpu_graphs.baselines.tiles import models
@@ -41,7 +40,7 @@ class ResModel(tf.keras.Model):
     self._prenet = _mlp([hidden_dim] * mlp_layers, hidden_activation)
     self._gc_layers = []
     for _ in range(num_gnns):
-      self._gc_layers.append(_mlp([hidden_dim] * mlp_layers, hidden_activation))
+      self._gc_layers.append(_mlp([hidden_dim] * mlp_layers, hidden_activation,use_GraphSage=True))
     self._postnet = _mlp([hidden_dim, 1], hidden_activation, use_bias=False)
 
   def call(self, graph: tfgnn.GraphTensor, training: bool = False):
@@ -67,7 +66,6 @@ class ResModel(tf.keras.Model):
     config_features = 100 * (adj_config @ config_features)
     x = tf.concat([config_features, x], axis=-1)
     x = self._prenet(x)
-    x = BatchNormalization()(x)
     x = tf.nn.leaky_relu(x)
 
     for layer in self._gc_layers:
@@ -131,7 +129,6 @@ class ResModel(tf.keras.Model):
         tf.nn.l2_normalize(adj_pool_config_sum @ config_feats, axis=-1),
     ], axis=-1))
 
-    x = BatchNormalization()(x)
     x = tf.squeeze(x, -1)
 
     return x

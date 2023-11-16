@@ -31,7 +31,7 @@ import tensorflow as tf
 import tensorflow_gnn as tfgnn
 
 from tpu_graphs.baselines.tiles import implicit
-
+from spektral.layers import GraphSageConv
 
 class _ConfigFeatureJoiner(abc.ABC):
   """Defines interface for joining config features with op nodes.
@@ -53,16 +53,28 @@ class _ConfigFeatureJoiner(abc.ABC):
     return pooled
 
 
-def _mlp(dims, hidden_activation, l2reg=1e-4, use_bias=True):
+def _mlp(dims, hidden_activation, l2reg=1e-4, use_bias=True, use_GraphSage = False):
   """Helper function for multi-layer perceptron (MLP)."""
-  layers = []
-  for i, dim in enumerate(dims):
-    if i > 0:
-      layers.append(tf.keras.layers.Activation(hidden_activation))
-    layers.append(tf.keras.layers.Dense(
-        dim, kernel_regularizer=tf.keras.regularizers.l2(l2reg),
-        use_bias=use_bias))
-  return tf.keras.Sequential(layers)
+  if use_GraphSage == False:
+    layers = []
+    for i, dim in enumerate(dims):
+      if i > 0:
+        layers.append(tf.keras.layers.Activation(hidden_activation))
+      layers.append(tf.keras.layers.Dense(
+          dim, kernel_regularizer=tf.keras.regularizers.l2(l2reg),
+          use_bias=use_bias))
+      layers.append(tf.keras.layers.BatchNormalization())
+    return tf.keras.Sequential(layers)
+  else:
+    layers = []
+    for i, dim in enumerate(dims):
+      if i > 0:
+        layers.append(tf.keras.layers.Activation(hidden_activation))
+      layers.append(GraphSageConv(
+          dim, kernel_regularizer=tf.keras.regularizers.l2(l2reg),
+          use_bias=use_bias))
+      layers.append(tf.keras.layers.BatchNormalization())
+    return tf.keras.Sequential(layers)
 
 
 class _OpEmbedding(tf.keras.Model):
@@ -94,7 +106,7 @@ class _SAGE(tf.keras.Model, _ConfigFeatureJoiner):
     self._op_embedding = _OpEmbedding(num_ops, op_embed_dim)
     self._gnn_layers = []
     for unused_i in range(num_gnns):
-      self._gnn_layers.append(_mlp([hidden_dim], hidden_activation))
+      self._gnn_layers.append(_mlp([hidden_dim], hidden_activation,use_GraphSage=True))
     self._postnet = _mlp(
         [hidden_dim] * final_mlp_layers + [1], hidden_activation)
     self._activation_fn = getattr(tf.nn, hidden_activation)
