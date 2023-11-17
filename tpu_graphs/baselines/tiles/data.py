@@ -353,26 +353,37 @@ class NpzDataset(NamedTuple):
     max_feat = tf.boolean_mask(max_feat, used_columns, axis=1)
     return (feature_matrix - min_feat) / (max_feat - min_feat)
 
+  def _get_mean_normalizer(self, feature_matrix):
+      mean_feat = tf.reduce_mean(feature_matrix, axis=0, keepdims=True)
+      std_feat = tf.math.reduce_std(feature_matrix, axis=0, keepdims=True)
+      return std_feat[0] > 0, mean_feat, std_feat
+
+  def _apply_mean_normalizer(self, feature_matrix, used_columns, mean_feat, std_feat):
+      feature_matrix = tf.boolean_mask(feature_matrix, used_columns, axis=1)
+      mean_feat = tf.boolean_mask(mean_feat, used_columns, axis=1)
+      std_feat = tf.boolean_mask(std_feat, used_columns, axis=1)
+      return (feature_matrix - mean_feat) / std_feat
+
   def normalize(self):
     """Removes constant features and normalizes remaining onto [0, 1].
 
     The statistics are computed only from train partition then applied to all
     partitions {train, test, validation}.
     """
-    normalizer_args = self._get_normalizer(self.train.node_feat)
-    self.train.node_feat = self._apply_normalizer(
+    normalizer_args = self._get_mean_normalizer(self.train.node_feat)
+    self.train.node_feat = self._apply_mean_normalizer(
         self.train.node_feat, *normalizer_args)
-    self.validation.node_feat = self._apply_normalizer(
+    self.validation.node_feat = self._apply_mean_normalizer(
         self.validation.node_feat, *normalizer_args)
-    self.test.node_feat = self._apply_normalizer(
+    self.test.node_feat = self._apply_mean_normalizer(
         self.test.node_feat, *normalizer_args)
 
-    normalizer_args = self._get_normalizer(self.train.config_feat)
-    self.train.config_feat = self._apply_normalizer(
+    normalizer_args = self._get_mean_normalizer(self.train.config_feat)
+    self.train.config_feat = self._apply_mean_normalizer(
         self.train.config_feat, *normalizer_args)
-    self.validation.config_feat = self._apply_normalizer(
+    self.validation.config_feat = self._apply_mean_normalizer(
         self.validation.config_feat, *normalizer_args)
-    self.test.config_feat = self._apply_normalizer(
+    self.test.config_feat = self._apply_mean_normalizer(
         self.test.config_feat, *normalizer_args)
 
 

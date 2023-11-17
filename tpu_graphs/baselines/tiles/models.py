@@ -53,27 +53,37 @@ class _ConfigFeatureJoiner(abc.ABC):
     return pooled
 
 
-def _mlp(dims, hidden_activation, l2reg=1e-4, use_bias=True, use_GraphSage = False):
+def _mlp(dims, hidden_activation, l2reg=1e-4, use_bias=True, use_GraphSage = False, dropout = False, postnet = False):
   """Helper function for multi-layer perceptron (MLP)."""
   if use_GraphSage == False:
     layers = []
     for i, dim in enumerate(dims):
       if i > 0:
-        layers.append(tf.keras.layers.Activation(hidden_activation))
+        if dropout == True:
+          layers.append(tf.keras.layers.Activation(hidden_activation))
+          layers.append(tf.keras.layers.Dropout(0.3))
+        else:
+          layers.append(tf.keras.layers.Activation(hidden_activation))
       layers.append(tf.keras.layers.Dense(
           dim, kernel_regularizer=tf.keras.regularizers.l2(l2reg),
           use_bias=use_bias))
-      layers.append(tf.keras.layers.BatchNormalization())
+      if postnet == False:
+        layers.append(tf.keras.layers.BatchNormalization())
     return tf.keras.Sequential(layers)
   else:
     layers = []
     for i, dim in enumerate(dims):
       if i > 0:
-        layers.append(tf.keras.layers.Activation(hidden_activation))
+        if dropout == True:
+          layers.append(tf.keras.layers.Activation(hidden_activation))
+          layers.append(tf.keras.layers.Dropout(0.3))
+        else:
+          layers.append(tf.keras.layers.Activation(hidden_activation))
       layers.append(GraphSageConv(
           dim, kernel_regularizer=tf.keras.regularizers.l2(l2reg),
           use_bias=use_bias))
-      layers.append(tf.keras.layers.BatchNormalization())
+      if postnet == False:
+        layers.append(tf.keras.layers.BatchNormalization())
     return tf.keras.Sequential(layers)
 
 
@@ -99,16 +109,16 @@ class _SAGE(tf.keras.Model, _ConfigFeatureJoiner):
 
   def __init__(self, num_configs: int, num_ops: int,
                num_gnns: int = 3, final_mlp_layers: int = 2,
-               hidden_activation: str = 'leaky_relu', hidden_dim: int = 64,
-               op_embed_dim: int = 64):
+               hidden_activation: str = 'leaky_relu', hidden_dim: int = 128,
+               op_embed_dim: int = 128):
     super().__init__()
     self._num_configs = num_configs
     self._op_embedding = _OpEmbedding(num_ops, op_embed_dim)
     self._gnn_layers = []
     for unused_i in range(num_gnns):
-      self._gnn_layers.append(_mlp([hidden_dim], hidden_activation,use_GraphSage=True))
+      self._gnn_layers.append(_mlp([hidden_dim], hidden_activation,dropout = True))
     self._postnet = _mlp(
-        [hidden_dim] * final_mlp_layers + [1], hidden_activation)
+        [hidden_dim] * final_mlp_layers + [1], hidden_activation, postnet=True)
     self._activation_fn = getattr(tf.nn, hidden_activation)
 
   def call(self, graph: tfgnn.GraphTensor, training: bool = False):
