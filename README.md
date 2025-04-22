@@ -1,10 +1,10 @@
 # Competition Result
-This competition, "Google - Fast or Slow? Predict AI Model Runtime," was hosted by Google on Kaggle. Here are my competition scores:
+This competition, "Google - Fast or Slow? Predict AI Model Runtime," was hosted by Google on Kaggle. Here are my competition Result:
 
-| Score Type   | Score   |
+|              | Score   |
 |--------------|---------|
-| Private      | 0.384   |
-| Public       | 0.452   |
+| Baseline Model     | 0.367   |
+| My Model       | 0.452   |
 
 My result in the competition was 95/617.
 
